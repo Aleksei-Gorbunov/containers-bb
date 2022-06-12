@@ -3,6 +3,8 @@ import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as blueprints from '@aws-quickstart/eks-blueprints';
 
+import { TeamPlatform, TeamApplication1, TeamApplication2 } from '../teams'; 
+
 export default class PipelineConstruct extends Construct {
   constructor(scope: Construct, id: string, props?: cdk.StackProps){
     super(scope,id)
@@ -14,7 +16,7 @@ export default class PipelineConstruct extends Construct {
     .account(account)
     .region(region)
     .addOns()
-    .teams();
+    .teams(new TeamPlatform(account), new TeamApplication1('app1',account), new TeamApplication2('app2',account));
   
     blueprints.CodePipelineStack.builder()
       .name("eks-blueprints-pipeline")
