@@ -18,7 +18,34 @@ export default class PipelineConstruct extends Construct {
     .addOns(new blueprints.ClusterAutoScalerAddOn)
     .teams(new TeamPlatform(account), new TeamApplication1('app1',account), new TeamApplication2('app2',account));
   
-    blueprints.CodePipelineStack.builder()
+    const repoUrl = 'https://github.com/aws-samples/eks-blueprints-workloads.git';
+
+    const bootstrapRepo : blueprints.ApplicationRepository = {
+        repoUrl,
+        targetRevision: 'workshop',
+    }
+
+    // HERE WE GENERATE THE ADDON CONFIGURATIONS
+    const devBootstrapArgo = new blueprints.ArgoCDAddOn({
+        bootstrapRepo: {
+            ...bootstrapRepo,
+            path: 'envs/dev'
+        },
+    });
+    const testBootstrapArgo = new blueprints.ArgoCDAddOn({
+        bootstrapRepo: {
+            ...bootstrapRepo,
+            path: 'envs/test'
+        },
+    });
+    const prodBootstrapArgo = new blueprints.ArgoCDAddOn({
+        bootstrapRepo: {
+            ...bootstrapRepo,
+            path: 'envs/prod'
+        },
+    });
+
+   blueprints.CodePipelineStack.builder()
       .name("eks-blueprints-pipeline")
       .owner("Aleksei-Gorbunov")
       .repository({
@@ -29,9 +56,9 @@ export default class PipelineConstruct extends Construct {
       .wave({
         id: "envs",
         stages: [
-          { id: "dev", stackBuilder: blueprint.clone('us-east-2')},
-          { id: "test", stackBuilder: blueprint.clone('us-west-2')},
-          { id: "prod", stackBuilder: blueprint.clone('us-east-1')}
+          { id: "dev", stackBuilder: blueprint.clone('us-east-2').addOns(devBootstrapArgo)},
+          { id: "test", stackBuilder: blueprint.clone('us-west-2').addOns(testBootstrapArgo)},
+          { id: "prod", stackBuilder: blueprint.clone('us-east-1').addOns(prodBootstrapArgo)}
         ]
       })
       .build(scope, id+'-stack', props);
